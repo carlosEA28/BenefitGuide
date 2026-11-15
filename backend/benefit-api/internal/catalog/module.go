@@ -11,7 +11,7 @@ import (
 type Service = service.Service
 
 type Module struct {
-	Repository *repository.Repository
+	Repository repository.Requirement
 	Service    *service.Service
 	Handler    *server.Handler
 }

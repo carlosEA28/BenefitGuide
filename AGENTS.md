@@ -35,3 +35,5 @@ Backend (`backend/benefit-api/`): veja o `AGENTS.md` de lá.
 - Nunca leia, edite ou exiba o conteúdo de arquivos `.env`. Para novas variáveis, atualize apenas `.env.example`.
 - Não adicione dependências sem justificar.
 - Mudanças pequenas e focadas; não refatore código fora do escopo do pedido.
+- Use a `PRD.md` para um contexto geral do projeto.
+- Se a duvida puder ser respondida olhando para o codigo, use ele.

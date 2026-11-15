@@ -3,30 +3,31 @@ package service
 import (
 	"context"
 	"fmt"
-	authmodule "github.com/carlosEA28/benefitGuide/internal/auth"
-	catalogmodule "github.com/carlosEA28/benefitGuide/internal/catalog"
+
 	"github.com/carlosEA28/benefitGuide/internal/consultations/internal/repository"
 )
 
+// Service holds the service dependencies and provides business logic.
+// The repository must implement the repository.Requirement interface to define
+// access requirements specific to this service.
 type Service struct {
-	repository *repository.Repository
-	auth       *authmodule.Service
-	catalog    *catalogmodule.Service
+	repository repository.Requirement
 }
 
-func New(repository *repository.Repository, auth *authmodule.Service, catalog *catalogmodule.Service) *Service {
-	return &Service{repository: repository, auth: auth, catalog: catalog}
+// New creates a new Service instance with a requirement-aware repository.
+func New(repository repository.Requirement) *Service {
+	return &Service{
+		repository: repository,
+	}
 }
 
+// Ready checks if the database is healthy and all requirements are met.
+// It first checks the database connection, then validates any service-specific
+// requirements defined in the repository's Requirement interface.
 func (s *Service) Ready(ctx context.Context) error {
-	if err := s.repository.Ready(ctx); err != nil {
-		return fmt.Errorf("database is not ready: %w", err)
+	if err := s.repository.Check(ctx); err != nil {
+		return fmt.Errorf("requirement check failed: %w", err)
 	}
-	if err := s.auth.Ready(ctx); err != nil {
-		return fmt.Errorf("auth is not ready: %w", err)
-	}
-	if err := s.catalog.Ready(ctx); err != nil {
-		return fmt.Errorf("catalog is not ready: %w", err)
-	}
+
 	return nil
 }

@@ -13,15 +13,16 @@ import (
 type Service = service.Service
 
 type Module struct {
-	Repository *repository.Repository
+	Repository repository.Requirement
 	Service    *service.Service
 	Handler    *server.Handler
 }
 
 func New(db *gorm.DB, auth *authmodule.Service, catalog *catalogmodule.Service) *Module {
 	repo := repository.New(db)
-	svc := service.New(repo, auth, catalog)
-	return &Module{Repository: repo, Service: svc, Handler: server.New(svc)}
+	svc := service.New(repo)
+	m := &Module{Repository: repo, Service: svc, Handler: server.New(svc)}
+	return m
 }
 
 func (m *Module) RegisterRoutes(r chi.Router) {
