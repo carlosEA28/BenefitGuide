@@ -27,6 +27,48 @@ func (s *Service) CreateRequirement(ctx context.Context, requirement *models.Ser
 	return s.repository.CreateRequirement(ctx, requirement)
 }
 
+// ListRequirements returns the requirements of an existing public service.
+func (s *Service) ListRequirements(ctx context.Context, publicServiceID uuid.UUID) ([]models.ServiceRequirement, error) {
+	if _, err := s.publicServiceRepository.FindPublicServiceByID(ctx, publicServiceID); err != nil {
+		return nil, err
+	}
+	return s.repository.FindByPublicServiceID(ctx, publicServiceID)
+}
+
+// GetRequirement returns a requirement only when it belongs to the given public service.
+func (s *Service) GetRequirement(ctx context.Context, publicServiceID, id uuid.UUID) (*models.ServiceRequirement, error) {
+	if id == uuid.Nil {
+		return nil, exceptions.ErrRequirementNotFound
+	}
+	requirement, err := s.repository.FindRequirementByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if requirement.PublicServiceID != publicServiceID {
+		return nil, exceptions.ErrRequirementNotFound
+	}
+	return requirement, nil
+}
+
+// UpdateRequirementForService updates a requirement only under its owning public service.
+func (s *Service) UpdateRequirementForService(ctx context.Context, publicServiceID uuid.UUID, changes *models.ServiceRequirement) (*models.ServiceRequirement, error) {
+	if changes == nil {
+		return nil, fmt.Errorf("%w: requirement is nil", exceptions.ErrInvalidRequirement)
+	}
+	if _, err := s.GetRequirement(ctx, publicServiceID, changes.ID); err != nil {
+		return nil, err
+	}
+	return s.UpdateRequirement(ctx, changes)
+}
+
+// DeleteRequirementForService deletes a requirement only under its owning public service.
+func (s *Service) DeleteRequirementForService(ctx context.Context, publicServiceID, id uuid.UUID) error {
+	if _, err := s.GetRequirement(ctx, publicServiceID, id); err != nil {
+		return err
+	}
+	return s.DeleteRequirement(ctx, id)
+}
+
 // UpdateRequirement updates mutable fields of an existing requirement.
 func (s *Service) UpdateRequirement(ctx context.Context, changes *models.ServiceRequirement) (*models.ServiceRequirement, error) {
 	if changes == nil {

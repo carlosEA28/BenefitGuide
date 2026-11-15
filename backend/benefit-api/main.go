@@ -67,6 +67,7 @@ func run(ctx context.Context) error {
 	router.Use(middleware.RequestID, middleware.RealIP, middleware.Logger, middleware.Recoverer, cors)
 	router.Get("/health", healthCheck(pool))
 	authModule.RegisterRoutes(router)
+	catalogModule.RegisterRoutes(router)
 	consultationsModule.RegisterRoutes(router)
 	documentsModule.RegisterRoutes(router)
 
