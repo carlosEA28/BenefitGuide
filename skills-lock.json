@@ -7,6 +7,12 @@
       "skillPath": "skills/productivity/grill-me/SKILL.md",
       "computedHash": "ab1acb9fbd9eaee03da254abb8a8de228d1e7a07475fe959da4a5eefa34ea4b9"
     },
+    "grill-with-docs": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
+      "computedHash": "02e258f41d210f9b2e7cce9faf62b3c59e8fcebe5d2736369c3cd07d471324f8"
+    },
     "skill-creator": {
       "source": "anthropics/skills",
       "sourceType": "github",

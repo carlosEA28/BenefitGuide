@@ -56,16 +56,17 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("ping PostgreSQL: %w", err)
 	}
 
+	// MODULOS
 	authModule := auth.New(database)
 	catalogModule := catalog.New(database)
 	consultationsModule := consultations.New(database, authModule.Service, catalogModule.Service)
 	documentsModule := documents.New(database, consultationsModule.Service)
 
+	// ROUTER
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID, middleware.RealIP, middleware.Logger, middleware.Recoverer, cors)
 	router.Get("/health", healthCheck(pool))
 	authModule.RegisterRoutes(router)
-	catalogModule.RegisterRoutes(router)
 	consultationsModule.RegisterRoutes(router)
 	documentsModule.RegisterRoutes(router)
 

@@ -37,3 +37,5 @@ Backend (`backend/benefit-api/`): veja o `AGENTS.md` de lá.
 - Mudanças pequenas e focadas; não refatore código fora do escopo do pedido.
 - Use a `PRD.md` para um contexto geral do projeto.
 - Se a duvida puder ser respondida olhando para o codigo, use ele.
+- CONTEXT.md: glossário do domínio. Usar esses termos.
+- ADRs: decisões do projeto. Consultar antes de propor mudanças.

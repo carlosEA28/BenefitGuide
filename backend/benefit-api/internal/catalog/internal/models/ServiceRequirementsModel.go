@@ -24,6 +24,8 @@ type ServiceRequirement struct {
 
 	ConditionDescription *string `gorm:"type:text" json:"condition_description,omitempty"`
 
+	DisplayOrder int `gorm:"column:display_order;not null;default:0" json:"display_order"`
+
 	CreatedAt time.Time `gorm:"not null;autoCreateTime" json:"created_at"`
 	UpdatedAt time.Time `gorm:"not null;autoUpdateTime" json:"updated_at"`
 }
