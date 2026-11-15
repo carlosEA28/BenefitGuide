@@ -15,6 +15,6 @@ type Module struct {
 
 func New(db *gorm.DB) *Module {
 	repo := repository.New(db)
-	svc := service.New(repo)
+	svc := service.New(repo, repo)
 	return &Module{Repository: repo, Service: svc}
 }

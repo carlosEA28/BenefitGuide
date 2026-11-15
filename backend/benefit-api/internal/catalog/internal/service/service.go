@@ -6,12 +6,14 @@ import (
 
 // Service holds the service dependencies and provides catalog business logic.
 type Service struct {
-	repository repository.RequirementRepository
+	repository              repository.RequirementRepository
+	publicServiceRepository repository.PublicServiceRepository
 }
 
-// New creates a new Service instance with a requirement-aware repository.
-func New(repository repository.RequirementRepository) *Service {
+// New creates a catalog Service with requirement and public-service repositories.
+func New(requirements repository.RequirementRepository, publicServices repository.PublicServiceRepository) *Service {
 	return &Service{
-		repository: repository,
+		repository:              requirements,
+		publicServiceRepository: publicServices,
 	}
 }
