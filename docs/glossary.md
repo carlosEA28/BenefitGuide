@@ -12,6 +12,14 @@ Registro de um serviço ou benefício apresentado pelo catálogo. Possui um iden
 
 Condição ou obrigação descrita para acessar um `PublicService`. Pertence a um único serviço público. Seu vínculo, representado por `public_service_id`, é definido na criação e não pode ser alterado por atualização (ADR 0002).
 
+## OfficialSource (fonte oficial)
+
+Referência identificável a uma página, documento ou publicação governamental que fundamenta as informações de um `PublicService`. Registra título, URL, órgão responsável e, quando conhecida, a data da última verificação. Pertence a um único serviço público; o vínculo não muda após o cadastro (ADR 0004). Pode ser cadastrada e mantida mesmo quando o serviço está `INACTIVE`.
+
+## Fonte oficial inexistente
+
+Fonte cujo ID não corresponde a um registro no catálogo. Consulta por ID, atualização e exclusão retornam `ErrOfficialSourceNotFound` (ADR 0004).
+
 ## MANDATORY (obrigatório)
 
 Tipo de requisito aplicável a todos os casos descritos para o serviço. Não exige `condition_description`; ao mudar um requisito para esse tipo, o texto da condição é limpo.

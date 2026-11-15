@@ -13,7 +13,7 @@ type OfficialSource struct {
 
 	Title  string `gorm:"type:varchar(255);not null" json:"title" validate:"required,max=255"`
 	URL    string `gorm:"column:url;type:text;not null" json:"url" validate:"required,url"`
-	Agency string `gorm:"type:varchar(255)" json:"agency"`
+	Agency string `gorm:"type:varchar(255);not null" json:"agency"`
 
 	LastVerifiedAt *time.Time `gorm:"column:last_verified_at" json:"last_verified_at,omitempty"`
 	CreatedAt      time.Time  `gorm:"not null;autoCreateTime" json:"created_at"`
