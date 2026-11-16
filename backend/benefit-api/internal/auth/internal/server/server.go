@@ -1,15 +1,19 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/carlosEA28/benefitGuide/internal/auth/internal/service"
 	"github.com/go-chi/chi/v5"
 )
 
-type Handler struct{ service *service.Service }
+type healthService interface {
+	Ready(context.Context) error
+}
 
-func New(service *service.Service) *Handler { return &Handler{service: service} }
+type Handler struct{ service healthService }
+
+func New(service healthService) *Handler { return &Handler{service: service} }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Get("/health", h.healthCheck)

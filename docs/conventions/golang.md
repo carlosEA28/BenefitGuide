@@ -2,56 +2,58 @@
 
 Este documento descreve as convenções de código para o projeto Go **Benefit Guide**. O objetivo é padronizar a estrutura para que exemplos de código possam ser inseridos e seguidos consistentemente por uma IA (ou desenvolvedores).
 
-## 1. Controller
+## 1. Handler HTTP
 
-Responsável por receber requisições HTTP, validar entrada e delegar à camada de serviço.
+O handler fica em `internal/<modulo>/internal/server`, recebe uma interface pequena definida no mesmo pacote e usa Chi com `net/http`. Cada método lê parâmetros e corpo, chama o serviço, mapeia erros conhecidos com `errors.Is` e escreve a resposta. Validação de domínio e regras de negócio ficam no serviço.
 
-- Utiliza **Chi** (`github.com/go-chi/chi/v5`) para roteamento.
-- Deve conter apenas o "boilerplate" de mapear parâmetros e retornar respostas JSON.
-- Nunca contém lógica de negócio — tudo deve ser delegado ao **Service**.
+Use `chi.URLParam` para parâmetros de rota. Decodifique JSON com `encoding/json` e os helpers do pacote, sem aceitar campos desconhecidos nem conteúdo extra quando esse for o contrato da rota. Use DTOs de entrada e saída; não exponha o modelo de persistência diretamente. Preserve os códigos, mensagens e formato JSON de cada endpoint.
 
-**Estrutura esperada:**
+Trecho baseado nos handlers de OfficialSource do Catalog (outros métodos da interface, imports e funções auxiliares do mesmo pacote omitidos):
 
 ```go
-// internal/auth/internal/server/handler.go
-package auth
-
-import (
-    "net/http"
-
-    "github.com/go-chi/chi/v5"
-    "github.com/carlosEA28/benefitGuide/internal/auth/service"
-)
-
-// Handler struct holds the service dependencies.
-type Handler struct {
-    Service service.Service
+type officialSourceService interface {
+    CreateOfficialSource(context.Context, *models.OfficialSource) (*models.OfficialSource, error)
 }
 
-// NewHandler cria um novo handler.
-func NewHandler(s service.Service) *Handler {
-    return &Handler{Service: s}
+type sourceHandler struct {
+    service officialSourceService
 }
 
-// RegisterRoutes injeta as rotas no router Chi.
-func (h *Handler) RegisterRoutes(r chi.Router) {
-    r.Method(http.MethodPost, "/login", h.Login)
-    r.Method(http.MethodPost, "/refresh-token", h.RefreshToken)
-    // ... mais rotas
+func newSourceHandler(service officialSourceService) *sourceHandler {
+    return &sourceHandler{service: service}
 }
 
-// Login lida com POST /auth/login (credenciais de login)
-func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-    // TODO: inserir código de parseio de LoginDTO e chamada h.Service.Login
-    writeJSON(w, http.StatusOK, map[string]interface{}{"status": "ok"})
-}
+func (h *sourceHandler) createSource(w http.ResponseWriter, r *http.Request) {
+    serviceID, err := parseUUID(r, "serviceId") // usa chi.URLParam
+    if err != nil {
+        writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+        return
+    }
 
-// RefreshToken lida com POST /auth/refresh-token (renovação de JWT)
-func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
-    // TODO: inserir código de refresh token e resposta
-    writeJSON(w, http.StatusOK, map[string]interface{}{"status": "refreshed"})
+    source, err := decodeSource(r) // DTO JSON e validação da entrada
+    if err != nil {
+        writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+        return
+    }
+    source.PublicServiceID = serviceID
+
+    created, err := h.service.CreateOfficialSource(r.Context(), source)
+    if err != nil {
+        switch {
+        case errors.Is(err, exceptions.ErrInvalidOfficialSource):
+            writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid official source"})
+        case errors.Is(err, exceptions.ErrPublicServiceNotFound):
+            writeJSON(w, http.StatusNotFound, map[string]string{"error": "public service not found"})
+        default:
+            writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal server error"})
+        }
+        return
+    }
+    writeJSON(w, http.StatusCreated, sourceResponseFor(created))
 }
 ```
+
+O Catalog concentra esse mapeamento no helper `writeServiceError`, compartilhado pelos handlers de requirements e sources. Um helper é adequado quando várias rotas seguem o mesmo contrato de erro. O `Handler` exportado compõe os handlers de recurso e registra as rotas com `r.Post`, `r.Get`, `r.Put` e `r.Delete`. Os nomes exportados necessários ao `module.go` permanecem exportados.
 
 ---
 
@@ -97,11 +99,11 @@ type UserResponseDTO struct {
 
 ## 3. Interfaces
 
-Definições de contratos que permitem injeção de dependência e facilita testes unitários.
+Definições de contratos para injeção de dependência.
 
 - **Repository Interface**: método de CRUD mínimo (`Create`, `GetByID`, `List`, `Update`, `Delete`).
-- **Service Interface**: método de lógica de negócio exposto pelo handler.
-- As interfaces devem ser definidas no pacote **próprio** ou em um pacote `internal`, mas **nunca** no `main`.
+- **Service Interface**: declare junto ao handler, no pacote consumidor `server`, apenas os métodos que ele chama. O construtor recebe essa interface.
+- Evite interfaces de serviço globais quando os recursos usam conjuntos diferentes de métodos. No Catalog, `requirementService` e `officialSourceService` são separados.
 
 **Exemplo:**
 
@@ -209,58 +211,9 @@ func (r *repository) GetByEmail(email string) (*model.Auth, error) {
 
 Configuração do servidor HTTP, roteador Chi e middlewares compartilhados.
 
-- O `main.go` inicia o servidor aqui.
-- Middlewares comuns: RequestID, RealIP, Logger, Recoverer, CORS.
-- Evitar colocar rotas específicas aqui; elas pertencem aos **Controllers**.
-
-**Exemplo (em main.go ou separate file):**
-
-```go
-// internal/shared/server/router.go
-package server
-
-import (
-    "net/http"
-
-    "github.com/go-chi/chi/v5"
-    "github.com/go-chi/chi/v5/middleware"
-    "github.com/carlosEA28/benefitGuide/internal/auth/controller"
-    "github.com/carlosEA28/benefitGuide/internal/catalog/controller"
-    // ... outros controllers
-)
-
-func NewRouter(authCtrl *auth.Controller, catalogCtrl *catalog.Controller) *chi.Mux {
-    r := chi.NewRouter()
-    r.Use(middleware.RequestID)
-    r.Use(middleware.RealIP)
-    r.Use(middleware.Logger)
-    r.Use(middleware.Recoverer)
-    r.Use(corsMiddleware) // definido abaixo
-
-    r.Route("/auth", func(r chi.Router) {
-        authCtrl.RegisterRoutes(r)
-    })
-    r.Route("/catalog", func(r chi.Router) {
-        catalogCtrl.RegisterRoutes(r)
-    })
-    // ... mais rotas
-
-    return r
-}
-
-func corsMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        if r.Method == http.MethodOptions {
-            w.WriteHeader(http.StatusNoContent)
-            return
-        }
-        next.ServeHTTP(w, r)
-    })
-}
-```
+- `main.go` configura o roteador, os middlewares compartilhados e o servidor HTTP.
+- Cada `module.go` compõe o serviço e o handler com `server.New(svc)` e chama `Handler.RegisterRoutes` no roteador Chi.
+- As rotas específicas ficam no `RegisterRoutes` do handler do módulo. O health check global em `main.go` é separado dos handlers dos módulos.
 
 ---
 
@@ -269,7 +222,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 Lógica de negócio central. Coordenador entre repositórios e outros serviços.
 
 - Receber repositórios (e outros serviços) via construtor ou parâmetros de função.
-- Retornar DTOs (ou modelos transformados) para o controller.
+- Retornar dados que o handler converte para os DTOs de resposta da API.
 - Lancar erros de domínio (ex.: usando pacote `errors` ou erros customizados do `shared/exceptions`).
 
 **Exemplo:**
@@ -396,10 +349,9 @@ func FormatDateISO(t time.Time) string {
 
 ## Como usar este documento
 
-1. Copie os esboços acima para os respectivos arquivos da sua estrutura `internal/<module>/`.
-2. Preencha os `TODO` e implemente a lógica conforme o domínio do Benefit Guide.
-3. Mantenha os nomes de pacote e arquivos consistentes com as convenções aqui definidas.
-4. Quando for inserir exemplos para a IA, basta adicionar o código real nas respectivas seções — a IA seguirá o padrão definido.
+1. Consulte os handlers existentes em `internal/<modulo>/internal/server` antes de adicionar uma rota.
+2. Defina no pacote consumidor apenas os métodos de serviço necessários e injete a interface pelo construtor.
+3. Siga os contratos HTTP do módulo e mantenha regras de negócio no serviço.
 
 ---
 *Última atualização: $(date +%Y-%m-%d)*
