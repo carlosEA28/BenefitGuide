@@ -14,11 +14,27 @@ Condição ou obrigação descrita para acessar um `PublicService`. Pertence a u
 
 ## OfficialSource (fonte oficial)
 
-Referência identificável a uma página, documento ou publicação governamental que fundamenta as informações de um `PublicService`. Registra título, URL, órgão responsável e, quando conhecida, a data da última verificação. Pertence a um único serviço público; o vínculo não muda após o cadastro (ADR 0004). Pode ser cadastrada e mantida mesmo quando o serviço está `INACTIVE`.
+Referência identificável a uma página, documento ou publicação governamental que fundamenta as informações de um `PublicService`. Registra título, URL, órgão responsável e, quando conhecida, a data da última verificação. Pertence a um único serviço público existente; o vínculo não muda após o cadastro (ADR 0004). Pode ser cadastrada e mantida mesmo quando o serviço está `INACTIVE`. O service valida os dados e o vínculo conforme a ADR 0005.
+
+## Title (título da fonte oficial)
+
+Nome que identifica a `OfficialSource`. É obrigatório e não pode ser vazio ou composto apenas de espaços. Espaços nas bordas são removidos antes de validar e cadastrar ou atualizar.
+
+## URL da fonte oficial
+
+Endereço da referência. É obrigatório e deve ter esquema `http` ou `https` e host sintaticamente válido. Espaços nas bordas são removidos antes da validação e da persistência (ADR 0005).
+
+## Agency (órgão da fonte oficial)
+
+Órgão responsável indicado na referência. É obrigatório e não pode ser vazio ou composto apenas de espaços (ADR 0005).
+
+## LastVerifiedAt (última verificação da fonte)
+
+Data e hora em que a `OfficialSource` foi verificada pela última vez. É opcional; valor ausente permanece `NULL` e uma atualização pode limpar o valor anterior (ADR 0005).
 
 ## Fonte oficial inexistente
 
-Fonte cujo ID não corresponde a um registro no catálogo. Consulta por ID, atualização e exclusão retornam `ErrOfficialSourceNotFound` (ADR 0004).
+Fonte cujo ID não corresponde a um registro no catálogo. Consulta por ID, atualização e exclusão retornam `ErrOfficialSourceNotFound` (ADR 0004). Para operações vinculadas a um `PublicService`, uma fonte que pertence a outro serviço recebe o mesmo erro (ADR 0005).
 
 ## MANDATORY (obrigatório)
 

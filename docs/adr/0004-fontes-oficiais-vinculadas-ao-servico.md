@@ -4,7 +4,7 @@
 
 O PRD exige que as informações de um serviço público sejam fundamentadas em referências identificáveis e que a última verificação da fonte possa ser registrada. A tabela `official_sources` já contém `public_service_id`, `title`, `url`, `agency`, `last_verified_at` e `created_at`. Sua chave estrangeira impede apagar um `PublicService` que ainda possui fontes.
 
-O `OfficialSourceRepository` é a primeira etapa da implementação. Não há nesta etapa service ou rotas HTTP para fontes oficiais.
+O `OfficialSourceRepository` foi a primeira etapa da implementação. Naquele momento não havia service ou rotas HTTP para fontes oficiais; o service foi definido posteriormente na ADR 0005.
 
 ## Decisão
 
@@ -18,4 +18,4 @@ O `OfficialSourceRepository` é a primeira etapa da implementação. Não há ne
 ## Consequências
 
 - O repository de fontes é uma implementação separada do repository já usado para requisitos, pois ambos têm um método `FindByPublicServiceID` com tipos de retorno diferentes.
-- Regras de validação de título, URL e órgão, além da resposta HTTP para os erros, ficam para a futura camada de service e handler. As constraints existentes continuam protegendo a persistência.
+- Regras de validação de título, URL e órgão são tratadas no service conforme ADR 0005. O mapeamento HTTP dos erros permanece para uma etapa posterior. As constraints existentes continuam protegendo a persistência.

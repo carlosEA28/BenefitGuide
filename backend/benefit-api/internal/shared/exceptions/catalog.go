@@ -9,6 +9,9 @@ var ErrRequirementNotFound = errors.New("service requirement not found")
 // ErrOfficialSourceNotFound indicates that no official source exists for the given ID.
 var ErrOfficialSourceNotFound = errors.New("official source not found")
 
+// ErrInvalidOfficialSource indicates invalid official source data.
+var ErrInvalidOfficialSource = errors.New("invalid official source")
+
 // ErrPublicServiceNotFound indicates that a public service ID is unknown.
 var ErrPublicServiceNotFound = errors.New("public service not found")
 
